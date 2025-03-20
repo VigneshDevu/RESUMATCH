@@ -1,0 +1,117 @@
+<!--
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Filter AI</title>
+</head>
+<body>
+    <h1>Upload Resume</h1>
+    <form id="upload-form" enctype="multipart/form-data">
+        <input type="file" id="file-input" name="file" required />
+        <button type="submit">Upload</button>
+    </form>
+    <p id="upload-message"></p>
+
+    <h2>Enter Job Description</h2>
+    <textarea id="job-description" rows="4" cols="50" placeholder="Enter job description here..."></textarea>
+    <button onclick="matchResumes()">Find Best Candidates</button>
+
+    <h3>Ranked Candidates</h3>
+    <div id="results"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Ranker</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+
+    <h2>Resume Ranker</h2>
+
+    <!-- Upload Resume -->
+    <h3>Upload Resume</h3>
+    <input type="file" id="resumeFile">
+    <button onclick="uploadResume()">Upload</button>
+    <p id="uploadStatus"></p>
+
+    <!-- Job Matching -->
+    <h3>Job Matching</h3>
+    <input type="text" id="jobDescription" placeholder="Enter job description">
+    <button onclick="matchCandidates()">Find Candidates</button>
+    <div id="results"></div>
+
+    <script>
+        function uploadResume() {
+            let fileInput = document.getElementById("resumeFile");
+            if (fileInput.files.length === 0) {
+                alert("Please select a file.");
+                return;
+            }
+
+            let formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+
+            $.ajax({
+                url: "http://127.0.0.1:5000/upload",
+                type: "POST",
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function (response) {
+                    $("#uploadStatus").text(response.message);
+                },
+                error: function (xhr, status, error) {
+                    $("#uploadStatus").text("Error: " + xhr.responseText);
+                }
+            });
+        }
+
+        function matchCandidates() {
+            let jobDesc = $("#jobDescription").val().trim();
+            if (jobDesc === "") {
+                alert("Please enter a job description.");
+                return;
+            }
+
+            $.ajax({
+                url: "http://127.0.0.1:5000/match",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({ job_description: jobDesc }),
+                success: function (response) {
+    let output = "<h3>Matched Candidates:</h3>";
+    response.candidates.forEach(candidate => {
+        output += `
+            <p><strong>Name:</strong> ${candidate.name}</p>
+            <p><strong>Email:</strong> ${candidate.email}</p>
+            <p><strong>Phone:</strong> ${candidate.phone}</p>
+            <p><strong>Score:</strong> ${candidate.score}</p>
+            <p><strong>Matched Info:</strong></p>
+            <ul>
+                ${Object.entries(candidate.matched_info).map(([key, value]) => 
+                    `<li><strong>${key}:</strong> ${value.length > 0 ? value.join(", ") : "N/A"}</li>`
+                ).join("")}
+            </ul>
+            <hr>`;
+    });
+    $("#results").html(output);
+}
+,
+                error: function (xhr, status, error) {
+                    $("#results").html("Error: " + xhr.responseText);
+                }
+            });
+        }
+    </script>
+
+</body>
+</html>
